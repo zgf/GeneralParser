@@ -13,16 +13,9 @@ namespace ztl
 	namespace general_parser
 	{
 
-		struct GeneralTokenDefine;
-		struct GeneralTypeDefine;
-		struct GeneralRuleDefine;
+	
 
-		struct GeneralTableDefine
-		{
-			vector<shared_ptr<GeneralTypeDefine>>   types;
-			vector<shared_ptr<GeneralTokenDefine>>  tokens;
-			vector<shared_ptr<GeneralRuleDefine>>   rules;
-		};
+	
 		/*
 		token和IgnoreToken的定义
 
@@ -35,14 +28,14 @@ namespace ztl
 		};
 
 		/*类型对象定义*/
-		struct GeneralTypeObject :public enable_shared_from_this <GeneralTypeObject>
+		struct GeneralTypeObject :public enable_shared_from_this<GeneralTypeObject>
 		{
 
 		};
 
 		struct GeneralArrayTypeObject : public GeneralTypeObject
 		{
-			shared_ptr<GeneralTypeObject>			type;
+			shared_ptr<GeneralTypeObject>			element;
 		};
 		//对string类型的使用
 		struct GeneralStringTypeObject : public GeneralTypeObject
@@ -62,7 +55,7 @@ namespace ztl
 		};
 		struct GeneralClassMemberTypeObject : public GeneralTypeObject
 		{
-			shared_ptr<GeneralTypeObject>						type;
+			shared_ptr<GeneralTypeObject>			type;
 			wstring									name;
 		};
 		struct GeneralEnumMemberTypeObject : public GeneralTypeObject
@@ -116,7 +109,8 @@ namespace ztl
 		struct GeneralGrammarUsingTypeDefine;
 		//创建节点.区别返回类型
 		struct GeneralGrammarCreateTypeDefine;
-
+		//选择
+		struct GeneralGrammarAlterationTypeDefine;
 		struct GeneralGrammarTypeDefine :public enable_shared_from_this<GeneralGrammarTypeDefine>
 		{
 
@@ -131,8 +125,8 @@ namespace ztl
 		};
 		struct GeneralGrammarSequenceTypeDefine : public GeneralGrammarTypeDefine
 		{
-			shared_ptr<GeneralGrammarTypeDefine>				left;
-			shared_ptr<GeneralGrammarTypeDefine>				right;
+			shared_ptr<GeneralGrammarTypeDefine>				first;
+			shared_ptr<GeneralGrammarTypeDefine>				second;
 		};
 		//循环
 		struct GeneralGrammarLoopTypeDefine : public GeneralGrammarTypeDefine
@@ -173,11 +167,24 @@ namespace ztl
 			shared_ptr<GeneralTypeObject>						type;
 			shared_ptr<GeneralGrammarTypeDefine>				grammar;
 		};
+		struct GeneralGrammarAlterationTypeDefine : public GeneralGrammarTypeDefine
+		{
+			shared_ptr<GeneralGrammarTypeDefine>				left;
+			shared_ptr<GeneralGrammarTypeDefine>				right;
+		};
+
 		struct GeneralRuleDefine
 		{
 			shared_ptr<GeneralTypeObject>						type;
 			wstring												name;
 			vector<shared_ptr<GeneralGrammarTypeDefine>>		grammars;
+		};
+
+		struct GeneralTableDefine
+		{
+			vector<shared_ptr<GeneralTypeDefine>>   types;
+			vector<shared_ptr<GeneralTokenDefine>>  tokens;
+			vector<shared_ptr<GeneralRuleDefine>>   rules;
 		};
 		//语法树手写工具
 
@@ -207,6 +214,7 @@ namespace ztl
 		struct GeneralTypeListWriter
 		{
 			vector<shared_ptr<GeneralTypeDefine>> types;
+	
 		public:
 			GeneralTypeListWriter& Class(const GeneralClassTypeWriter& writer);
 			GeneralTypeListWriter& Enum(const GeneralEnumTypeWriter& writer);
@@ -215,6 +223,11 @@ namespace ztl
 		struct GeneralClassTypeWriter
 		{
 			shared_ptr<GeneralClassTypeDefine> _struct;
+		public:
+			GeneralClassTypeWriter::GeneralClassTypeWriter() :_struct(make_shared<GeneralClassTypeDefine>())
+			{
+
+			}
 		public:
 			GeneralClassTypeWriter& Name(const wstring& name);
 			GeneralClassTypeWriter& Member(const shared_ptr<GeneralClassMemberTypeObject>& member);
@@ -225,6 +238,11 @@ namespace ztl
 		struct GeneralEnumTypeWriter
 		{
 			shared_ptr<GeneralEnumTypeDefine> _enum;
+		public:
+			GeneralEnumTypeWriter::GeneralEnumTypeWriter() :_enum(make_shared<GeneralEnumTypeDefine>())
+			{
+
+			}
 		public:
 			GeneralEnumTypeWriter& Name(const wstring& name);
 			GeneralEnumTypeWriter& Member(const shared_ptr<GeneralEnumMemberTypeObject>& member);
@@ -246,9 +264,17 @@ namespace ztl
 		{
 			shared_ptr<GeneralRuleDefine> rule;
 		public:
+			GeneralRuleWriter::GeneralRuleWriter() :rule(make_shared<GeneralRuleDefine>())
+			{
+
+			}
+		public:
 			GeneralRuleWriter& Name(const wstring& name);
 			GeneralRuleWriter& ReturnType(const shared_ptr<GeneralTypeObject>& type);
+
+			GeneralRuleWriter& operator|(const GeneralGrammarWriter& writer);
 			GeneralRuleWriter& Grammar(const GeneralGrammarWriter& writer);
+
 		};
 
 		
@@ -258,6 +284,11 @@ namespace ztl
 		struct GeneralGrammarWriter
 		{
 			shared_ptr<GeneralGrammarTypeDefine> grammar;
+		public:
+			GeneralGrammarWriter::GeneralGrammarWriter() :grammar(make_shared<GeneralGrammarTypeDefine>())
+			{
+
+			}
 		public:
 			//附加
 			GeneralGrammarWriter&		Addition(const GeneralSetterGrammarWriter& writer);
@@ -277,7 +308,7 @@ namespace ztl
 	
 
 		//序列+
-		GeneralGrammarWriter operator+(const GeneralGrammarWriter& left, const GeneralGrammarWriter& right);
+		GeneralGrammarWriter operator+(const GeneralGrammarWriter& first, const GeneralGrammarWriter& second);
 		//using!
 		GeneralGrammarWriter operator!(const GeneralGrammarWriter& writer);
 		//循环*
@@ -287,9 +318,9 @@ namespace ztl
 		//终结符号
 		GeneralGrammarWriter Text(const wstring& text);
 		//终结符号
-		GeneralGrammarWriter Grammar(const wstring& name);
+		GeneralGrammarWriter GrammarSymbol(const wstring& name);
 
-
+		GeneralGrammarWriter operator|(const GeneralGrammarWriter& left, const GeneralGrammarWriter& right);
 
 		//struct GeneralTokenWriter;
 		//struct GeneralTypeWriter;
@@ -298,11 +329,16 @@ namespace ztl
 		struct GeneralTableWriter
 		{
 			shared_ptr<GeneralTableDefine>	table;
+		public:
+			GeneralTableWriter::GeneralTableWriter() :table(make_shared<GeneralTableDefine>())
+			{
 
+			}
 		public:
 			GeneralTableWriter& Token(const GeneralTokenWriter& writer);
 			GeneralTableWriter& Type(const GeneralTypeListWriter& writer);
 			GeneralTableWriter& RuleList(const GeneralRuleListWriter& writer);
 		};
+		shared_ptr<GeneralTableDefine> BootStrapDefineTable();
 	}
 }

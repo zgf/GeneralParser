@@ -27,7 +27,7 @@ namespace ztl
 		shared_ptr<GeneralArrayTypeObject>			Array(const shared_ptr<GeneralTypeObject>& elementType)
 		{
 			auto result  = make_shared<GeneralArrayTypeObject>();
-			result->type = elementType;
+			result->element = elementType;
 			return result;
 		}
 		shared_ptr<GeneralClassMemberTypeObject>	ClassMember(const shared_ptr<GeneralTypeObject>& type, const wstring& name)
@@ -63,6 +63,8 @@ namespace ztl
 		}
 
 		//GeneralTypeListWriter
+		
+		
 		GeneralTypeListWriter& GeneralTypeListWriter::Class(const GeneralClassTypeWriter& writer)
 		{
 			this->types.emplace_back(writer._struct);
@@ -74,6 +76,7 @@ namespace ztl
 			return *this;
 		}
 		//GeneralClassTypeWriter
+		
 		GeneralClassTypeWriter& GeneralClassTypeWriter::Name(const wstring& name)
 		{
 			this->_struct->name = name;
@@ -98,6 +101,8 @@ namespace ztl
 			return *this;
 		}
 		//GeneralEnumTypeWriter
+		
+		
 		GeneralEnumTypeWriter& GeneralEnumTypeWriter::Name(const wstring& name)
 		{
 			this->_enum->name = name;
@@ -117,6 +122,7 @@ namespace ztl
 		}
 
 		//GeneralRuleWriter
+	
 		GeneralRuleWriter& GeneralRuleWriter::Name(const wstring& name)
 		{
 			this->rule->name = name;
@@ -128,13 +134,18 @@ namespace ztl
 			this->rule->type = type;
 			return *this;
 		}
-
 		GeneralRuleWriter& GeneralRuleWriter::Grammar(const GeneralGrammarWriter& writer)
+		{
+			return *this | writer;
+		}
+
+		GeneralRuleWriter& GeneralRuleWriter::operator|(const GeneralGrammarWriter& writer)
 		{
 			this->rule->grammars.emplace_back(writer.grammar);
 			return *this;
 		}
 		//GeneralGrammarWriter
+		
 		GeneralGrammarWriter& GeneralGrammarWriter::Addition(const GeneralSetterGrammarWriter& writer)
 		{
 			auto result		= make_shared<GeneralGrammarAdditionTypeDefine>();
@@ -174,12 +185,12 @@ namespace ztl
 
 
 		//ÐòÁÐ+
-		GeneralGrammarWriter operator+(const GeneralGrammarWriter& left, const GeneralGrammarWriter& right)
+		GeneralGrammarWriter operator+(const GeneralGrammarWriter& first, const GeneralGrammarWriter& second)
 		{
 			GeneralGrammarWriter writer;
 			auto result = make_shared<GeneralGrammarSequenceTypeDefine>();
-			result->left = left.grammar;
-			result->right = right.grammar;
+			result->first = first.grammar;
+			result->second = second.grammar;
 			writer.grammar = move(result);
 			return writer;
 		}
@@ -220,7 +231,7 @@ namespace ztl
 			return grammarWriter;
 		}
 		//ÖÕ½á·ûºÅ
-		GeneralGrammarWriter Grammar(const wstring& name)
+		GeneralGrammarWriter GrammarSymbol(const wstring& name)
 		{
 			GeneralGrammarWriter grammarWriter;
 			auto result = make_shared<GeneralGrammarNormalTypeDefine>();
@@ -228,9 +239,19 @@ namespace ztl
 			grammarWriter.grammar = move(result);
 			return grammarWriter;
 		}
+		GeneralGrammarWriter operator|(const GeneralGrammarWriter& left, const GeneralGrammarWriter& right)
+		{
+			GeneralGrammarWriter grammarWriter;
+			auto result = make_shared<GeneralGrammarAlterationTypeDefine>();
+			result->left = left.grammar;
+			result->right = right.grammar;
+			grammarWriter.grammar = move(result);
+			return grammarWriter;
+		}
+		
 		GeneralTableWriter& GeneralTableWriter::Token(const GeneralTokenWriter& writer)
 		{
-			table->tokens = writer.tokens;
+			table->tokens.assign(writer.tokens.begin(),writer.tokens.end());
 			return *this;
 		}
 		GeneralTableWriter& GeneralTableWriter::Type(const GeneralTypeListWriter& writer)

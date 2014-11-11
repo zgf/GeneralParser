@@ -6,6 +6,7 @@
 #include "Include/GeneraTableDefine.h"
 int main()
 {
+	ztl::general_parser::BootStrapDefineTable();
 	return 0;
 }
 

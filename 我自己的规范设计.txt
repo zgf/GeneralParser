@@ -1,0 +1,232 @@
+		
+		/*
+		token和IgnoreToken的定义
+
+		*/
+		class GeneralTokenDefine
+		{
+			enum TokenOptional
+			{
+				False,
+				True,
+			};
+			wstring			name;
+			wstring			regex;
+			TokenOptional	ignore;
+		};
+
+		/*类型对象定义*/
+		class GeneralTypeObject
+		{
+
+		};
+
+		class GeneralArrayTypeObject :  GeneralTypeObject
+		{
+			GeneralTypeObject			element;
+		};
+		//对string类型的使用
+		class GeneralStringTypeObject :  GeneralTypeObject
+		{
+
+		};
+		//对自定义类型的使用
+		class GeneralNormalTypeObject :  GeneralTypeObject
+		{
+			wstring									name;
+		};
+		//对嵌套定义类型的使用 例如 类型A下定义了类型B     A.B cc;
+		class GeneralSubTypeObject :  GeneralTypeObject
+		{
+			GeneralTypeObject						parent;
+			wstring									name;
+		};
+		class GeneralClassMemberTypeObject :  GeneralTypeObject
+		{
+			GeneralTypeObject						type;
+			wstring									name;
+		};
+		class GeneralEnumMemberTypeObject :  GeneralTypeObject
+		{
+			wstring									name;
+		};
+		/*
+		类型的声明的定义
+		*/
+		class GeneralTypeDefine
+		{
+
+		};
+		class GeneralClassTypeDefine :  GeneralTypeDefine
+		{
+			GeneralTypeDefine[]				subType;
+			GeneralClassMemberTypeObject[]	members;
+			GeneralTypeObject				parent;
+			wstring							name;
+		};
+		class GeneralEnumTypeDefine :  GeneralTypeDefine
+		{
+			GeneralEnumMemberTypeObject[]		members;
+			wstring								name;
+		};
+
+		class GeneralGrammarTypeDefine 
+		{
+
+		};
+		class GeneralGrammarTextTypeDefine :  GeneralGrammarTypeDefine
+		{
+			wstring												text;
+		};
+		class GeneralGrammarNormalTypeDefine :  GeneralGrammarTypeDefine
+		{
+			wstring												name;
+		};
+		class GeneralGrammarSequenceTypeDefine :  GeneralGrammarTypeDefine
+		{
+			GeneralGrammarTypeDefine				first;
+			GeneralGrammarTypeDefine				second;
+		};
+		//循环
+		class GeneralGrammarLoopTypeDefine :  GeneralGrammarTypeDefine
+		{
+			GeneralGrammarTypeDefine				grammar;
+		};
+		//可选
+		class GeneralGrammarOptionalTypeDefine :  GeneralGrammarTypeDefine
+		{
+			GeneralGrammarTypeDefine				grammar;
+		};
+		//赋值
+		class GeneralGrammarAssignTypeDefine :  GeneralGrammarTypeDefine
+		{
+			wstring									name;
+			GeneralGrammarTypeDefine				grammar;
+		};
+		//附加赋值 with{}
+		class GeneralGrammarAdditionTypeDefine :  GeneralGrammarTypeDefine
+		{
+			GeneralGrammarTypeDefine				grammar;
+			GeneralGrammarSetterTypeDefine[]		setters;
+		};
+		//附加的key-value对
+		class GeneralGrammarSetterTypeDefine :  GeneralGrammarTypeDefine
+		{
+			wstring												name;
+			wstring												value;
+		};
+		//Using操作. 隐式类型转换
+		class GeneralGrammarUsingTypeDefine :  GeneralGrammarTypeDefine
+		{
+			GeneralGrammarTypeDefine				grammar;
+		};
+		//创建节点 区别返回类型
+		class GeneralGrammarCreateTypeDefine :  GeneralGrammarTypeDefine
+		{
+			GeneralTypeObject						type;
+			GeneralGrammarTypeDefine				grammar;
+		};
+		
+		class GeneralGrammarAlternationTypeDefine : GeneralGrammarTypeDefine
+		{
+			GeneralGrammarTypeDefine left;
+			GeneralGrammarTypeDefine right;
+		}
+		class GeneralRuleDefine
+		{
+			GeneralTypeObject						type;
+			wstring									name;
+			GeneralGrammarTypeDefine[]				grammars;
+		};
+		class GeneralTableDefine
+		{
+			GeneralTypeDefine[]   types;
+			GeneralTokenDefine[]  tokens;
+			GeneralRuleDefine[]   rules;
+		};
+		
+token CLASS = "class";
+token ENUM = "enum";
+token TOKEN = "token";
+token DISCARDTOKEN = "ignoretoken";
+token RULE = "rule";
+token AS = "as";
+token WITH = "with";
+token OPEN = "{";
+token CLOSE = "}";
+token SEMICOLON = ";";
+token COLON = ":";
+token COMMA = ",";
+token DOT = ".";
+token ASSIGN = "=";
+token USING = "!";
+token OR = "|";
+token OPTOPEN = "/[";
+token OPTCLOSE = "/]";
+token PREOPEN = "/(";
+token PRECLOSE = "/)";
+token NAME = "[a-zA-Z_]/w*";
+token STRING = "\"(\\\"|[^"])*\""
+ignoretoken SPACE = "/s+";
+ignoretoken LINENOTE = "//[^\n]*\n";
+ignoretoken BLOCKNOTE = "/*.*?*/";
+
+rule GeneralTypeObject Type
+        = NAME : name as GeneralNormalTypeObject
+        = "token" as GeneralTokenTypeObject
+        = Type : parent "." NAME : name as GeneralSubTypeObject 
+        = Type : element "[" "]" as GeneralArrayTypeObject
+        ;
+rule GeneralEnumMemberTypeObject EnumMember
+        = NAME : name "," as GeneralEnumMemberTypeObject 
+        ;
+rule GeneralEnumTypeDefine Enum
+        = "enum" NAME : name  "{" { EnumMember : members } "}" as GeneralEnumTypeDefine
+        ;
+rule GeneralClassMemberTypeObject ClassMember
+        = Type : type NAME : name ";" as GeneralClassMemberTypeObject
+        ;
+rule GeneralTypeDefine TypeDecl
+        = !Enum | !Class
+        ;
+
+rule GeneralClassTypeDefine Class
+        = "class" NAME : name [ ":" Type : parent ] "{" { ClassMember : members | TypeDecl : subTypes } "}" as GeneralClassTypeDefine
+        ;
+		
+rule GeneralGrammarTypeDefine SequenceGrammar
+        = !PrimitiveGrammar
+        = SequenceGrammar : first PrimitiveGrammar : second as GeneralGrammarSequenceTypeDefine
+        ;
+rule GeneralGrammarTypeDefine AlternativeGrammar
+        = !SequenceGrammar
+        = AlternativeGrammar : left "|" SequenceGrammar : right as GeneralGrammarAlternationTypeDefine
+        ;
+		
+rule GeneralGrammarTypeDefine SetterGrammar
+        = NAME : name "=" STRING : value  as GeneralGrammarSetterTypeDefine
+rule GeneralGrammarTypeDefine Grammar
+        = !AlternativeGrammar
+        = Grammar : grammar "as" Type : type as GeneralGrammarCreateTypeDefine
+        = Grammar : grammar "with" "{" { SetterGrammar : setters } "}" as GeneralGrammarAdditionTypeDefine
+        ;
+rule GeneralGrammarTypeDefine PrimitiveGrammar
+        = NAME : name as GeneralGrammarNormalTypeDefine
+        = STRING : text as GeneralGrammarTextTypeDefine
+        = PrimitiveGrammar : grammar ":" NAME : name as GeneralGrammarAssignTypeDefine
+        = "!" PrimitiveGrammar : grammar as GeneralGrammarUsingTypeDefine
+        = "[" Grammar : grammar "]" as GeneralGrammarOptionalTypeDefine
+        = "{" Grammar : grammar "}" as GeneralGrammarLoopTypeDefine
+        = "(" !Grammar ")"
+        ;
+
+rule GeneralTokenDefine TokenDecl
+        = "token" NAME : name "=" STRING : regex ";" as GeneralTokenDefine with { ignore = "False" }
+        = "ignoretoken" NAME : name "=" STRING : regex ";" as GeneralTokenDefine with { ignore = "True" }
+        ;
+rule GeneralRuleDefine RuleDecl
+        = "rule" Type : type NAME : name { "=" Grammar : grammars } ";" as GeneralRuleDefine
+        ;
+rule GeneralTableDefine ParserDecl
+        =  TypeDecl : types  TokenDecl : tokens  RuleDecl : rules  as GeneralTableDefine
+        ;

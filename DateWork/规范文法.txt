@@ -1,16 +1,6 @@
 =============================================================
 Grammar Definition
 =============================================================
-class AttributeDef
-{
-    token name @Color("Attribute");
-    token[] arguments;
-}
-
-class DefBase
-{
-    AttributeDef[] attributes;
-}
 
 class TypeObj
 {
