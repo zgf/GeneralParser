@@ -10,169 +10,299 @@
  */
 namespace ztl
 {
+	namespace general_parser
+	{
+
+		struct GeneralTokenDefine;
+		struct GeneralTypeDefine;
+		struct GeneralRuleDefine;
+
+		struct GeneralTableDefine
+		{
+			vector<shared_ptr<GeneralTypeDefine>>   types;
+			vector<shared_ptr<GeneralTokenDefine>>  tokens;
+			vector<shared_ptr<GeneralRuleDefine>>   rules;
+		};
+		/*
+		token和IgnoreToken的定义
+
+		*/
+		struct GeneralTokenDefine
+		{
+			wstring name;
+			wstring regex;
+			bool	ignore;
+		};
+
+		/*类型对象定义*/
+		struct GeneralTypeObject :public enable_shared_from_this <GeneralTypeObject>
+		{
+
+		};
+
+		struct GeneralArrayTypeObject : public GeneralTypeObject
+		{
+			shared_ptr<GeneralTypeObject>			type;
+		};
+		//对string类型的使用
+		struct GeneralStringTypeObject : public GeneralTypeObject
+		{
+
+		};
+		//对自定义类型的使用
+		struct GeneralNormalTypeObject : public GeneralTypeObject
+		{
+			wstring									name;
+		};
+		//对嵌套定义类型的使用 例如 类型A下定义了类型B     A.B cc;
+		struct GeneralSubTypeObject : public GeneralTypeObject
+		{
+			shared_ptr<GeneralTypeObject>			parent;
+			wstring									name;
+		};
+		struct GeneralClassMemberTypeObject : public GeneralTypeObject
+		{
+			shared_ptr<GeneralTypeObject>						type;
+			wstring									name;
+		};
+		struct GeneralEnumMemberTypeObject : public GeneralTypeObject
+		{
+			wstring									name;
+		};
+		/*
+		类型的声明的定义
+		*/
+		struct GeneralTypeDefine :public enable_shared_from_this <GeneralTypeDefine>
+		{
+
+		};
+		struct GeneralClassTypeDefine : public GeneralTypeDefine
+		{
+			vector<shared_ptr<GeneralTypeDefine>>				subType;
+			vector<shared_ptr<GeneralClassMemberTypeObject>>	members;
+			shared_ptr<GeneralTypeObject>						parent;
+			wstring												name;
+		};
+		struct GeneralEnumTypeDefine : public GeneralTypeDefine
+		{
+			vector<shared_ptr<GeneralEnumMemberTypeObject>>		members;
+			wstring												name;
+		};
+
+		/*
+		文法定义
+		*/
+		//文法元素
+		//终结符号
+		struct GeneralGrammarTextTypeDefine;
+		//非终结符号
+		struct GeneralGrammarNonTerminateTypeDefine;
+		//文法的行为
+
+		//序列
+		struct GeneralGrammarSequenceTypeDefine;
+		//循环
+		struct GeneralGrammarLoopTypeDefine;
+		//可选
+		struct GeneralGrammarOptionalTypeDefine;
+		//赋值
+		struct GeneralGrammarAssignTypeDefine;
+		//附加赋值 with{}
+		struct GeneralGrammarAdditionTypeDefine;
+		//附加的key value
+		struct GeneralGrammarSetterTypeDefine;
+
+		//Using操作. 隐式类型转换
+		struct GeneralGrammarUsingTypeDefine;
+		//创建节点.区别返回类型
+		struct GeneralGrammarCreateTypeDefine;
+
+		struct GeneralGrammarTypeDefine :public enable_shared_from_this<GeneralGrammarTypeDefine>
+		{
+
+		};
+		struct GeneralGrammarTextTypeDefine : public GeneralGrammarTypeDefine
+		{
+			wstring												text;
+		};
+		struct GeneralGrammarNormalTypeDefine : public GeneralGrammarTypeDefine
+		{
+			wstring												name;
+		};
+		struct GeneralGrammarSequenceTypeDefine : public GeneralGrammarTypeDefine
+		{
+			shared_ptr<GeneralGrammarTypeDefine>				left;
+			shared_ptr<GeneralGrammarTypeDefine>				right;
+		};
+		//循环
+		struct GeneralGrammarLoopTypeDefine : public GeneralGrammarTypeDefine
+		{
+			shared_ptr<GeneralGrammarTypeDefine>				grammar;
+		};
+		//可选
+		struct GeneralGrammarOptionalTypeDefine : public GeneralGrammarTypeDefine
+		{
+			shared_ptr<GeneralGrammarTypeDefine>				grammar;
+		};
+		//赋值
+		struct GeneralGrammarAssignTypeDefine : public GeneralGrammarTypeDefine
+		{
+			wstring												name;
+			shared_ptr<GeneralGrammarTypeDefine>				grammar;
+		};
+		//附加赋值 with{}
+		struct GeneralGrammarAdditionTypeDefine : public GeneralGrammarTypeDefine
+		{
+			shared_ptr<GeneralGrammarTypeDefine>				grammar;
+			vector<shared_ptr<GeneralGrammarSetterTypeDefine>>  setters;
+		};
+		//附加的key-value对
+		struct GeneralGrammarSetterTypeDefine : public GeneralGrammarTypeDefine
+		{
+			wstring												name;
+			wstring												value;
+		};
+		//Using操作. 隐式类型转换
+		struct GeneralGrammarUsingTypeDefine : public GeneralGrammarTypeDefine
+		{
+			shared_ptr<GeneralGrammarTypeDefine>				grammar;
+		};
+		//创建节点 区别返回类型
+		struct GeneralGrammarCreateTypeDefine : public GeneralGrammarTypeDefine
+		{
+			shared_ptr<GeneralTypeObject>						type;
+			shared_ptr<GeneralGrammarTypeDefine>				grammar;
+		};
+		struct GeneralRuleDefine
+		{
+			shared_ptr<GeneralTypeObject>						type;
+			wstring												name;
+			vector<shared_ptr<GeneralGrammarTypeDefine>>		grammars;
+		};
+		//语法树手写工具
+
+
+		//Token手写
+		struct GeneralTokenWriter
+		{
+			vector<shared_ptr<GeneralTokenDefine>> tokens;
+		public:
+			GeneralTokenWriter& Token(const wstring& name, const wstring& regex);
+			GeneralTokenWriter& IgnoreToken(const wstring& name, const wstring& regex);
+		private:
+			GeneralTokenWriter& Token(const wstring& name, const wstring& regex,bool ignore);
+
+		};
+		//TypeObject手写
+		shared_ptr<GeneralArrayTypeObject>			Array(const shared_ptr<GeneralTypeObject>& elementType);
+		shared_ptr<GeneralClassMemberTypeObject>	ClassMember(const shared_ptr<GeneralTypeObject>& type, const wstring& name);
+		shared_ptr<GeneralEnumMemberTypeObject>		EnumMember(const wstring& name);
+		shared_ptr<GeneralNormalTypeObject>			Normal(const wstring& name);
+		shared_ptr<GeneralStringTypeObject>			String();
+		shared_ptr<GeneralSubTypeObject>			SubTypeObject(const shared_ptr<GeneralTypeObject>& parent, const wstring& name);
+
+		//Type手写
+		struct GeneralClassTypeWriter;
+		struct GeneralEnumTypeWriter;
+		struct GeneralTypeListWriter
+		{
+			vector<shared_ptr<GeneralTypeDefine>> types;
+		public:
+			GeneralTypeListWriter& Class(const GeneralClassTypeWriter& writer);
+			GeneralTypeListWriter& Enum(const GeneralEnumTypeWriter& writer);
+		};
+
+		struct GeneralClassTypeWriter
+		{
+			shared_ptr<GeneralClassTypeDefine> _struct;
+		public:
+			GeneralClassTypeWriter& Name(const wstring& name);
+			GeneralClassTypeWriter& Member(const shared_ptr<GeneralClassMemberTypeObject>& member);
+			GeneralClassTypeWriter& SubType(const GeneralTypeListWriter& writer);
+			GeneralClassTypeWriter& ParentType(const shared_ptr<GeneralTypeObject>& type);
+		};
+
+		struct GeneralEnumTypeWriter
+		{
+			shared_ptr<GeneralEnumTypeDefine> _enum;
+		public:
+			GeneralEnumTypeWriter& Name(const wstring& name);
+			GeneralEnumTypeWriter& Member(const shared_ptr<GeneralEnumMemberTypeObject>& member);
+		};
+
+		
+
+		//规则手写
+		struct GeneralRuleWriter;
+		struct GeneralRuleListWriter
+		{
+			vector<shared_ptr<GeneralRuleDefine>> rules;
+		public:
+			GeneralRuleListWriter& Rule(const GeneralRuleWriter& writer);
+		};
+
+		struct GeneralGrammarWriter;
+		struct GeneralRuleWriter
+		{
+			shared_ptr<GeneralRuleDefine> rule;
+		public:
+			GeneralRuleWriter& Name(const wstring& name);
+			GeneralRuleWriter& ReturnType(const shared_ptr<GeneralTypeObject>& type);
+			GeneralRuleWriter& Grammar(const GeneralGrammarWriter& writer);
+		};
+
+		
+
+		//文法规则手写
+		struct GeneralSetterGrammarWriter;
+		struct GeneralGrammarWriter
+		{
+			shared_ptr<GeneralGrammarTypeDefine> grammar;
+		public:
+			//附加
+			GeneralGrammarWriter&		Addition(const GeneralSetterGrammarWriter& writer);
+			//创建 As
+			GeneralGrammarWriter&		Create(const shared_ptr<GeneralTypeObject>& type);
+			//赋值
+			GeneralGrammarWriter&		operator[](const wstring& name);
+		};
+
+		
+		struct GeneralSetterGrammarWriter
+		{
+			vector<shared_ptr<GeneralGrammarSetterTypeDefine>> setters;
+			GeneralSetterGrammarWriter& Setter(const wstring& name, const wstring& value);
+		};
+
 	
-	class GeneralTokenDefine;
-	class GeneralTypeDefine;
-	class GeneralRuleDefine;
 
-	class GeneralTableDefine
-	{
-		vector<shared_ptr<GeneralTypeDefine>>   types;
-		vector<shared_ptr<GeneralTokenDefine>>  tokens;
-		vector<shared_ptr<GeneralRuleDefine>>   rules;
-	};
-	/*
-	token和IgnoreToken的定义
+		//序列+
+		GeneralGrammarWriter operator+(const GeneralGrammarWriter& left, const GeneralGrammarWriter& right);
+		//using!
+		GeneralGrammarWriter operator!(const GeneralGrammarWriter& writer);
+		//循环*
+		GeneralGrammarWriter operator*(const GeneralGrammarWriter& writer);
+		//可选~
+		GeneralGrammarWriter operator~(const GeneralGrammarWriter& writer);
+		//终结符号
+		GeneralGrammarWriter Text(const wstring& text);
+		//终结符号
+		GeneralGrammarWriter Grammar(const wstring& name);
 
-	*/
-	class GeneralTokenDefine
-	{
-		wstring name;
-		wstring regex;
-		bool	ignore;
-	};
 
-	/*类型对象定义*/
-	class GeneralTypeObject
-	{
 
-	};
-	
-	class GeneralArrayTypeObject : public GeneralTypeObject
-	{
-		shared_ptr<GeneralTypeObject>			type;
-	};
-	//对string类型的使用
-	class GeneralStringTypeObject : public GeneralTypeObject
-	{
+		//struct GeneralTokenWriter;
+		//struct GeneralTypeWriter;
+		//struct GeneralRuleWriter;
+		//Table手写
+		struct GeneralTableWriter
+		{
+			shared_ptr<GeneralTableDefine>	table;
 
-	};
-	//对自定义类型的使用
-	class GeneralNormalTypeObject : public GeneralTypeObject
-	{
-		shared_ptr<wstring>						name;
-	}; 
-	//对嵌套定义类型的使用 例如 类型A下定义了类型B     A.B cc;
-	class GeneralSubTypeObject : public GeneralTypeObject
-	{ 
-		shared_ptr<GeneralTypeObject>			parent;
-		wstring									name;
-	};
-	class GeneralClassMemberTypeObject : public GeneralTypeObject
-	{
-		GeneralTypeObject						type;
-		wstring									name;
-	};
-	class GeneralEnumMemberTypeObject : public GeneralTypeObject
-	{
-		wstring									name;
-	};
-	/*
-	类型的声明的定义
-	*/
-	class GeneralTypeDefine
-	{
-
-	};
-	class GeneralClassTypeDefine : public GeneralTypeDefine
-	{
-		vector<shared_ptr<GeneralTypeDefine>>				subType;
-		vector<shared_ptr<GeneralClassMemberTypeObject>>	members;
-		shared_ptr<GeneralTypeObject>						parent;
-	};
-	class GeneralEnumTypeDefine : public GeneralTypeDefine
-	{
-		vector<shared_ptr<GeneralEnumMemberTypeObject>>		members;
-	};
-	
-	/*
-	文法定义
-	*/
-	//文法元素
-	//终结符号
-	class GeneralGrammarTextTypeDefine;
-	//非终结符号
-	class GeneralGrammarNonTerminateTypeDefine;
-	//文法的行为
-
-	//序列
-	class GeneralGrammarSequenceTypeDefine;
-	//循环
-	class GeneralGrammarLoopTypeDefine;
-	//可选
-	class GeneralGrammarOptionalTypeDefine;
-	//赋值
-	class GeneralGrammarAssignTypeDefine;
-	//附加赋值 with{}
-	class GeneralGrammarAdditionTypeDefine;
-	//附加的key value
-	class GeneralGrammarSetterTypeDefine;
-
-	//Using操作. 隐式类型转换
-	class GeneralGrammarUsingTypeDefine;
-	//创建节点.区别返回类型
-	class GeneralGrammarCreateTypeDefine;
-
-	class GeneralGrammarTypeDefine
-	{
-
-	};
-	class GeneralGrammarTextTypeDefine : public GeneralGrammarTypeDefine
-	{
-		wstring												text;
-	};
-	class GeneralGrammarNonTerminateTypeDefine : public GeneralGrammarTypeDefine
-	{
-		wstring												name;
-	};
-	class GeneralGrammarSequenceTypeDefine : public GeneralGrammarTypeDefine
-	{
-		shared_ptr<GeneralGrammarTypeDefine>				left;
-		shared_ptr<GeneralGrammarTypeDefine>				right;
-	};
-	//循环
-	class GeneralGrammarLoopTypeDefine : public GeneralGrammarTypeDefine
-	{
-		shared_ptr<GeneralGrammarTypeDefine>				grammar;
-	};
-	//可选
-	class GeneralGrammarOptionalTypeDefine : public GeneralGrammarTypeDefine
-	{
-		shared_ptr<GeneralGrammarTypeDefine>				grammar;
-	};
-	//赋值
-	class GeneralGrammarAssignTypeDefine : public GeneralGrammarTypeDefine
-	{
-		wstring												name;
-		shared_ptr<GeneralGrammarTypeDefine>				grammar;
-	};
-	//附加赋值 with{}
-	class GeneralGrammarAdditionTypeDefine : public GeneralGrammarTypeDefine
-	{
-		shared_ptr<GeneralGrammarTypeDefine>				grammar;
-		vector<shared_ptr<GeneralGrammarSetterTypeDefine>>  setters;
-	};
-	//附加的key-value对
-	class GeneralGrammarSetterTypeDefine : public GeneralGrammarTypeDefine
-	{
-		wstring												name;
-		wstring												value;
-	};
-	//Using操作. 隐式类型转换
-	class GeneralGrammarUsingTypeDefine : public GeneralGrammarTypeDefine
-	{
-		shared_ptr<GeneralGrammarTypeDefine>				grammar;
-	};
-	//创建节点 区别返回类型
-	class GeneralGrammarCreateTypeDefine : public GeneralGrammarTypeDefine
-	{
-		shared_ptr<GeneralTypeObject>						type;
-		shared_ptr<GeneralGrammarTypeDefine>				grammar;
-	};
-	class GeneralRuleDefine
-	{
-		shared_ptr<GeneralTypeObject>						type;
-		wstring												name;
-		vector<shared_ptr<GeneralGrammarTypeDefine>>		grammars;
-	};
+		public:
+			GeneralTableWriter& Token(const GeneralTokenWriter& writer);
+			GeneralTableWriter& Type(const GeneralTypeListWriter& writer);
+			GeneralTableWriter& RuleList(const GeneralRuleListWriter& writer);
+		};
+	}
 }
